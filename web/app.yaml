@@ -1,0 +1,7 @@
+runtime: go111
+
+automatic_scaling:
+  max_idle_instances: 1
+
+includes:
+- env.yaml
