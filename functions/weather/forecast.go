@@ -7,24 +7,41 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
+	"time"
 )
 
 const baseAPIURL = "http://weather.livedoor.com/forecast/webservice/json/v1"
+
+// PublicTime type
+type PublicTime struct {
+	Time time.Time
+}
+
+// UnmarshalJSON method
+func (pt *PublicTime) UnmarshalJSON(data []byte) error {
+	result, err := time.Parse(`"2006-01-02T15:04:05-0700"`, strings.Replace(string(data), "\\u002b", "+", -1))
+	if err != nil {
+		return err
+	}
+	pt.Time = result
+	return nil
+}
 
 // Result type
 type Result struct {
 	Title       string      `json:"title"`
 	Description Description `json:"description"`
 	Link        string      `json:"link"`
-	PublicTime  string      `json:"publicTime"`
+	PublicTime  *PublicTime `json:"publicTime"`
 	Location    Location    `json:"location"`
 	Forecasts   []Forecast  `json:"forecasts"`
 }
 
 // Description type
 type Description struct {
-	Text       string `json:"text"`
-	PublicTime string `json:"publicTime"`
+	Text       string      `json:"text"`
+	PublicTime *PublicTime `json:"publicTime"`
 }
 
 // Location type
