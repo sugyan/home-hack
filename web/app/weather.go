@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"strconv"
 	"strings"
@@ -13,28 +12,23 @@ import (
 	"github.com/sugyan/home-hack/functions/weather"
 )
 
-func (a *App) slashWeatherHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) slashWeatherHandler(w http.ResponseWriter, r *http.Request) *appError {
 	message, err := a.weatherMessage()
 	if err != nil {
-		log.Printf(err.Error())
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return &appError{err, "failed to fetch weather"}
 	}
 	message.ResponseType = "in_channel"
 	w.Header().Set("Content-Type", "application/json")
 	if err := json.NewEncoder(w).Encode(message); err != nil {
-		log.Printf(err.Error())
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return &appError{err, "failed to encode json"}
 	}
+	return nil
 }
 
-func (a *App) cronWeatherHandler(w http.ResponseWriter, r *http.Request) {
+func (a *App) cronWeatherHandler(w http.ResponseWriter, r *http.Request) *appError {
 	message, err := a.weatherMessage()
 	if err != nil {
-		log.Printf(err.Error())
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return &appError{err, "failed to fetch weather"}
 	}
 	message.Channel = a.weather["CHANNEL"]
 	message.UserName = a.weather["USERNAME"]
@@ -42,19 +36,14 @@ func (a *App) cronWeatherHandler(w http.ResponseWriter, r *http.Request) {
 
 	buf := bytes.NewBuffer(nil)
 	if err := json.NewEncoder(buf).Encode(message); err != nil {
-		log.Printf(err.Error())
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return &appError{err, "failed to encode to json"}
 	}
 	resp, err := http.Post(a.webhookURL.String(), "application/json", buf)
 	if err := json.NewEncoder(buf).Encode(message); err != nil {
-		log.Printf(err.Error())
-		http.Error(w, http.StatusText(http.StatusInternalServerError), http.StatusInternalServerError)
-		return
+		return &appError{err, "failed to post message"}
 	}
 	defer resp.Body.Close()
-
-	w.Write([]byte("OK"))
+	return nil
 }
 
 func (a *App) weatherMessage() (*Message, error) {

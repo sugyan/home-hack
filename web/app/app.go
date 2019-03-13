@@ -16,13 +16,25 @@ type App struct {
 	webhookURL *url.URL
 }
 
+type appError struct {
+	err     error
+	message string
+}
+
+type appHandler func(http.ResponseWriter, *http.Request) *appError
+
+func (fn appHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	if err := fn(w, r); err != nil {
+		log.Printf("failed to process request: %s [%s]", err.message, err.err.Error())
+	}
+}
+
 // NewApp function
 func NewApp(environ []string) (*App, error) {
 	app := &App{
 		weather: map[string]string{},
 	}
 	for _, env := range environ {
-		log.Printf("env: %s", env)
 		kv := strings.SplitN(env, "=", 2)
 		switch kv[0] {
 		case "WEATHER_CITY", "WEATHER_CHANNEL", "WEATHER_USERNAME", "WEATHER_ICONEMOJI":
@@ -39,9 +51,9 @@ func NewApp(environ []string) (*App, error) {
 	r := mux.NewRouter()
 	// TODO: Verifying requests from Slack
 	// https://api.slack.com/docs/verifying-requests-from-slack
-	r.HandleFunc("/slash/weather", app.slashWeatherHandler)
+	r.Handle("/slash/weather", appHandler(app.slashWeatherHandler))
 	// TODO: Verifying requests from GAE
-	r.HandleFunc("/cron/weather", app.cronWeatherHandler)
+	r.Handle("/cron/weather", appHandler(app.cronWeatherHandler))
 
 	app.r = r
 	return app, nil
