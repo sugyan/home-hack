@@ -1,5 +1,5 @@
 cron:
 - description: "weather"
   url: /cron/weather
-  schedule: every 12 hours from 09:00 to 22:00
+  schedule: every 12 hours from 08:30 to 21:00
   timezone: Asia/Tokyo
