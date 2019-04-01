@@ -11,9 +11,11 @@ import (
 
 // App type
 type App struct {
-	r          http.Handler
-	weather    map[string]string
-	webhookURL *url.URL
+	r                http.Handler
+	oauthAccessToken string
+	remindChannel    string
+	weather          map[string]string
+	webhookURL       *url.URL
 }
 
 type appError struct {
@@ -37,6 +39,10 @@ func NewApp(environ []string) (*App, error) {
 	for _, env := range environ {
 		kv := strings.SplitN(env, "=", 2)
 		switch kv[0] {
+		case "OAUTH_ACCESS_TOKEN":
+			app.oauthAccessToken = kv[1]
+		case "REMIND_CHANNEL":
+			app.remindChannel = kv[1]
 		case "WEATHER_CITY", "WEATHER_CHANNEL", "WEATHER_USERNAME", "WEATHER_ICONEMOJI":
 			app.weather[strings.TrimPrefix(kv[0], "WEATHER_")] = kv[1]
 		case "WEBHOOK_URL":
@@ -47,13 +53,13 @@ func NewApp(environ []string) (*App, error) {
 			app.webhookURL = u
 		}
 	}
-	log.Printf("%v", app.weather)
 	r := mux.NewRouter()
 	// TODO: Verifying requests from Slack
 	// https://api.slack.com/docs/verifying-requests-from-slack
 	r.Handle("/slash/weather", appHandler(app.slashWeatherHandler))
 	// TODO: Verifying requests from GAE
 	r.Handle("/cron/weather", appHandler(app.cronWeatherHandler))
+	r.Handle("/cron/reminder", appHandler(app.cronReminderHandler))
 
 	app.r = r
 	return app, nil

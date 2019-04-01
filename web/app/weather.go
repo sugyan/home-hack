@@ -1,7 +1,6 @@
 package app
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"net/http"
@@ -25,28 +24,7 @@ func (a *App) slashWeatherHandler(w http.ResponseWriter, r *http.Request) *appEr
 	return nil
 }
 
-func (a *App) cronWeatherHandler(w http.ResponseWriter, r *http.Request) *appError {
-	message, err := a.weatherMessage()
-	if err != nil {
-		return &appError{err, "failed to fetch weather"}
-	}
-	message.Channel = a.weather["CHANNEL"]
-	message.UserName = a.weather["USERNAME"]
-	message.IconEmoji = a.weather["ICONEMOJI"]
-
-	buf := bytes.NewBuffer(nil)
-	if err := json.NewEncoder(buf).Encode(message); err != nil {
-		return &appError{err, "failed to encode to json"}
-	}
-	resp, err := http.Post(a.webhookURL.String(), "application/json", buf)
-	if err := json.NewEncoder(buf).Encode(message); err != nil {
-		return &appError{err, "failed to post message"}
-	}
-	defer resp.Body.Close()
-	return nil
-}
-
-func (a *App) weatherMessage() (*Message, error) {
+func (a *App) weatherMessage() (*message, error) {
 	cityIDstr := a.weather["CITY"]
 	cityID, err := strconv.Atoi(cityIDstr)
 	if err != nil {
@@ -56,12 +34,12 @@ func (a *App) weatherMessage() (*Message, error) {
 	if err != nil {
 		return nil, err
 	}
-	message := &Message{
+	message := &message{
 		Text:        fmt.Sprintf("%s (%s 発表) %s", result.Title, result.PublicTime.Time.Format(time.Kitchen), result.Link),
-		Attachments: []*Attachment{},
+		Attachments: []*attachment{},
 	}
 	for _, forecast := range result.Forecasts {
-		attachment := &Attachment{
+		attachment := &attachment{
 			AuthorIcon: forecast.Image.URL,
 			AuthorName: fmt.Sprintf("%s (%s)", forecast.DateLabel, forecast.Date),
 			Text:       forecast.Telop,
