@@ -3,3 +3,7 @@ cron:
   url: /cron/weather
   schedule: every 12 hours from 08:30 to 21:00
   timezone: Asia/Tokyo
+- description: "wishlist"
+  url: /cron/wishlist
+  schedule: every friday 22:00
+  timezone: Asia/Tokyo
