@@ -1,14 +1,8 @@
 package app
 
 import (
-	"bytes"
-	"encoding/json"
-	"log"
 	"net/http"
-	"net/url"
 )
-
-const endopointChannelsHistory = "/channels.history"
 
 func (a *App) cronWeatherHandler(w http.ResponseWriter, r *http.Request) *appError {
 	message, err := a.weatherMessage()
@@ -19,42 +13,23 @@ func (a *App) cronWeatherHandler(w http.ResponseWriter, r *http.Request) *appErr
 	message.UserName = a.weather["USERNAME"]
 	message.IconEmoji = a.weather["ICONEMOJI"]
 
-	buf := bytes.NewBuffer(nil)
-	if err := json.NewEncoder(buf).Encode(message); err != nil {
-		return &appError{err, "failed to encode to json"}
+	if err := a.sendMessage(message); err != nil {
+		return &appError{err, "failed to send message"}
 	}
-	resp, err := http.Post(a.webhookURL.String(), "application/json", buf)
-	if err := json.NewEncoder(buf).Encode(message); err != nil {
-		return &appError{err, "failed to post message"}
-	}
-	defer resp.Body.Close()
 	return nil
 }
 
-func (a *App) cronReminderHandler(w http.ResponseWriter, r *http.Request) *appError {
-	u, err := url.ParseRequestURI(apiBaseURL + endopointChannelsHistory)
+func (a *App) cronWishlistHandler(w http.ResponseWriter, r *http.Request) *appError {
+	message, err := a.wishlistMessage()
 	if err != nil {
-		return &appError{err, "failed to parse URL"}
+		return &appError{err, "failed to fetch wishlist"}
 	}
-	q := url.Values{}
-	q.Set("token", a.oauthAccessToken)
-	q.Set("channel", a.remindChannel)
-	q.Set("count", "200")
-	u.RawQuery = q.Encode()
-	res, err := http.Get(u.String())
-	if err != nil {
-		return &appError{err, "failed to get histories"}
-	}
-	defer res.Body.Close()
+	message.Channel = a.wishlistChannel
+	message.UserName = "wishlist"
+	message.IconEmoji = ":memo:"
 
-	result := &apiResponse{}
-	if json.NewDecoder(res.Body).Decode(result); err != nil {
-		return &appError{err, "failed to decode json"}
-	}
-	for _, history := range result.Messages {
-		if history.MessageID != "" && len(history.Reactions) == 0 {
-			log.Printf("%v", history.Text)
-		}
+	if err := a.sendMessage(message); err != nil {
+		return &appError{err, "failed to send message"}
 	}
 	return nil
 }

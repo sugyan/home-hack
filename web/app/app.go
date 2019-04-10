@@ -13,8 +13,9 @@ import (
 type App struct {
 	r                http.Handler
 	oauthAccessToken string
-	remindChannel    string
 	weather          map[string]string
+	wishlistChannel  string
+	workspace        string
 	webhookURL       *url.URL
 }
 
@@ -41,10 +42,12 @@ func NewApp(environ []string) (*App, error) {
 		switch kv[0] {
 		case "OAUTH_ACCESS_TOKEN":
 			app.oauthAccessToken = kv[1]
-		case "REMIND_CHANNEL":
-			app.remindChannel = kv[1]
 		case "WEATHER_CITY", "WEATHER_CHANNEL", "WEATHER_USERNAME", "WEATHER_ICONEMOJI":
 			app.weather[strings.TrimPrefix(kv[0], "WEATHER_")] = kv[1]
+		case "WISHLIST_CHANNEL":
+			app.wishlistChannel = kv[1]
+		case "WORKSPACE":
+			app.workspace = kv[1]
 		case "WEBHOOK_URL":
 			u, err := url.ParseRequestURI(kv[1])
 			if err != nil {
@@ -59,7 +62,7 @@ func NewApp(environ []string) (*App, error) {
 	r.Handle("/slash/weather", appHandler(app.slashWeatherHandler))
 	// TODO: Verifying requests from GAE
 	r.Handle("/cron/weather", appHandler(app.cronWeatherHandler))
-	r.Handle("/cron/reminder", appHandler(app.cronReminderHandler))
+	r.Handle("/cron/wishlist", appHandler(app.cronWishlistHandler))
 
 	app.r = r
 	return app, nil
