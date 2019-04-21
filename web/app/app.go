@@ -60,6 +60,7 @@ func NewApp(environ []string) (*App, error) {
 	// TODO: Verifying requests from Slack
 	// https://api.slack.com/docs/verifying-requests-from-slack
 	r.Handle("/slash/weather", appHandler(app.slashWeatherHandler))
+	r.Handle("/slash/wishlist", appHandler(app.slashWishlistHandler))
 	// TODO: Verifying requests from GAE
 	r.Handle("/cron/weather", appHandler(app.cronWeatherHandler))
 	r.Handle("/cron/wishlist", appHandler(app.cronWishlistHandler))

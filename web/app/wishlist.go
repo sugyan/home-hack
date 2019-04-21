@@ -9,6 +9,19 @@ import (
 	"strings"
 )
 
+func (a *App) slashWishlistHandler(w http.ResponseWriter, r *http.Request) *appError {
+	message, err := a.wishlistMessage()
+	if err != nil {
+		return &appError{err, "failed to create wishlist message"}
+	}
+	message.ResponseType = "in_channel"
+	w.Header().Set("Content-Type", "application/json")
+	if err := json.NewEncoder(w).Encode(message); err != nil {
+		return &appError{err, "failed to encode json"}
+	}
+	return nil
+}
+
 func (a *App) wishlistMessage() (*message, error) {
 	u, err := url.ParseRequestURI(apiBaseURL + endopointChannelsHistory)
 	if err != nil {
