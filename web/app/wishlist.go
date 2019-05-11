@@ -42,22 +42,26 @@ func (a *App) wishlistMessage() (*message, error) {
 	if json.NewDecoder(res.Body).Decode(result); err != nil {
 		return nil, err
 	}
+	ignoreMap := map[string]struct{}{}
+	for _, emoji := range a.wishlistIgnoreEmojis {
+		ignoreMap[emoji] = struct{}{}
+	}
 	attachments := []*attachment{}
 	for i := range result.Messages {
 		history := result.Messages[len(result.Messages)-1-i]
 		if history.MessageID == "" {
 			continue
 		}
-		isDone := false
 		reactions := []string{}
+		ignore := false
 		for _, reaction := range history.Reactions {
-			if reaction.Name == "done" {
-				isDone = true
+			if _, exist := ignoreMap[reaction.Name]; exist {
+				ignore = true
 				break
 			}
 			reactions = append(reactions, ":"+reaction.Name+":")
 		}
-		if isDone {
+		if ignore {
 			continue
 		}
 		ts, err := strconv.ParseFloat(history.TS, 32)

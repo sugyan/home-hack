@@ -11,12 +11,13 @@ import (
 
 // App type
 type App struct {
-	r                http.Handler
-	oauthAccessToken string
-	weather          map[string]string
-	wishlistChannel  string
-	workspace        string
-	webhookURL       *url.URL
+	r                    http.Handler
+	oauthAccessToken     string
+	weather              map[string]string
+	wishlistChannel      string
+	wishlistIgnoreEmojis []string
+	workspace            string
+	webhookURL           *url.URL
 }
 
 type appError struct {
@@ -46,6 +47,8 @@ func NewApp(environ []string) (*App, error) {
 			app.weather[strings.TrimPrefix(kv[0], "WEATHER_")] = kv[1]
 		case "WISHLIST_CHANNEL":
 			app.wishlistChannel = kv[1]
+		case "WISHLIST_IGNORE_EMOJIS":
+			app.wishlistIgnoreEmojis = strings.Split(kv[1], ",")
 		case "WORKSPACE":
 			app.workspace = kv[1]
 		case "WEBHOOK_URL":
@@ -64,6 +67,8 @@ func NewApp(environ []string) (*App, error) {
 	// TODO: Verifying requests from GAE
 	r.Handle("/cron/weather", appHandler(app.cronWeatherHandler))
 	r.Handle("/cron/wishlist", appHandler(app.cronWishlistHandler))
+	// Events API
+	r.Handle("/events", appHandler(app.eventsHandler))
 
 	app.r = r
 	return app, nil

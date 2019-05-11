@@ -50,6 +50,12 @@ type reaction struct {
 	Name string `json:"name"`
 }
 
+type events struct {
+	Token     string `json:"token"`
+	Challenge string `json:"challenge"`
+	Type      string `json:"type"`
+}
+
 func (a *App) sendMessage(message *message) error {
 	buf := bytes.NewBuffer(nil)
 	if err := json.NewEncoder(buf).Encode(message); err != nil {
